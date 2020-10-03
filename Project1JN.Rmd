@@ -1,0 +1,182 @@
+---
+title: "Project1"
+author: "Jenny Norton"
+date: "9/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## The Dataset: UFO Sightings Around the World
+
+The data for this project was obtained from https://www.kaggle.com/camnugent/ufo-sightings-around-the-world by Cam Nugent.
+
+## Loading and Cleaning the Data
+
+You can load the clean data here:
+
+```{r}
+source("CleanData.R")
+```
+
+I read the data into ufo_data and changed the date_documented column from col_character to col_date with the formatting to remove a character at the end.
+
+I had four parsing failures in the length_of_encounter_seconds column and the latitude column but I decided not to fix it at this point.  
+
+I tried parsing Date_time to a date and time format but there were 698 parsing failures do to the time being 24:00.  Using a str_replace command, I was able to search and replace the 24:00 with 00:00 and parse into the date and time format and add a new column called Date_time2.
+
+I didn't like how they had the state/province column named so I did a rename command to change it from `state/province` to state_province.
+
+I filtered the data by the Date_time2 column for incidents that happened in the 1970s and arranged by shape and saved it as ufo_data1970 in case I wanted to work with a smaller subset of the data.
+
+
+## Overview
+
+The data set contains 80,332 entries, dating back to 1949, with 11 original columns:
+
+Date_time - standardized date and time of sighting
+city - location of UFO sighting
+state_province - the US state or Canadian province, appears blank for other locations
+country - Country of UFO sighting
+UFO_shape - a one word description of the "spacecraft"
+length_of_encounter_seconds - standardized to seconds, length of the observation of the UFO
+described_duration _of_encounter - raw description of the length of the encounter 
+description - text description of the UFO encounter
+date_documented - when was the UFO sighting reported
+latitude - latitude
+longitude - longitude
+
+## Summary
+
+The data set contains over 80,000 records of UFO sightings back to 1949.  The original file was accessed by Cam Nugent at https://github.com/planetsig/ufo-reports which was prepared by Sigmond Axel in 2014.  Sigmond received the data from NUFORC (National UFO Reporting Center) at www.nuforc.org and did a bunch of cleaning of the dates which were using two digit years.
+
+At this point, I'm interested in the UFO_shape and the Date_time2 columns.  I might also use the state_province and the country columns after further review and cleaning and the length_of_encounter_seconds column.
+
+## Exploration of the Data
+
+What are the different UFO Shapes?
+
+```{r}
+ufo_data %>%
+  count(UFO_shape) %>%
+  arrange(desc(n))
+```
+
+What states or provinces have the most sightings?
+
+```{r}
+ufo_data %>%
+  count(state_province) %>%
+  arrange(desc(n))
+```
+
+I see there are quite a few records without a state or province listed so let's filter those out.
+
+```{r}
+ufo_data %>%
+  filter(!is.na(state_province)) %>%
+  count(state_province) %>%
+  arrange(desc(n))
+```
+
+Looks like California has the most sightings.  I wonder where New Mexico shows up on this list?
+
+```{r}
+ufo_data %>%
+  filter(!is.na(state_province), state_province == "nm") %>%
+  count(state_province) %>%
+  arrange(desc(n))
+```
+
+```{r}
+ufo_data %>%
+  filter(!is.na(state_province)) %>%
+  ggplot() +
+  geom_bar(aes(x = state_province)) +
+  coord_cartesian(xlim = c(0, 10)) +
+  labs(title = "Number of UFO Sightings by State or Province",
+       x = "State or Province",
+       y = "Sightings")
+```
+
+```{r}
+ufo_data %>%
+  filter(!is.na(UFO_shape), !is.na(state_province), state_province == "ca") %>%
+ggplot() +
+      geom_bar(aes(x = UFO_shape)) +
+               coord_flip() +
+  labs(title = "CA State UFO Data by Shape", x = "UFO Shape", y = "Number in CA")
+```
+
+```{r}
+ufo_data %>%
+  group_by(UFO_shape) %>%
+  mutate(ufo_shape_total = n()) -> ufo_data
+```
+
+```{r}
+ufo_data %>%
+  summarize(state_province, ufo_shape_total)
+```
+
+What are the top 10 states with light sightings?
+```{r}
+ufo_data %>%
+  filter(!is.na(state_province), UFO_shape == "light") %>%
+  count(state_province) %>%
+  arrange(desc(n)) %>%
+  top_n(10)
+```
+
+How can I graph this?
+```{r}
+ufo_data %>%
+  filter(UFO_shape == "light") %>%
+  group_by(state_province) %>%
+  filter(n() > 426) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_bar(aes(x = state_province), fill = "blue") +
+  labs(title = "Top 10 States/Provinces with 'Light' Sightings",
+       x = "State/Province")
+```
+
+I wonder why California has so many more light sightings than the other states?  The next highest shape is the triangle.  I wonder what state has the most sightings of the triangle?
+
+```{r}
+ufo_data %>%
+  filter(!is.na(state_province), UFO_shape == "triangle") %>%
+  count(state_province) %>%
+  arrange(desc(n)) %>%
+  top_n(10)
+```
+
+```{r}
+ufo_data %>%
+  filter(UFO_shape == "triangle") %>%
+  group_by(state_province) %>%
+  filter(n() > 238) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_bar(aes(x = state_province), fill = "green") +
+  labs(title = "Top 10 States/Provinces with 'Triangle' Sightings",
+       x = "State/Province")
+```
+
+California again which we should have gathered since California has the most overall sightings. 
+
+## Future Work
+
+I would like to keep working with my data and see if I can:
+
+  * Determine if the UFO_shape and the length_of_encounter_seconds have any relationship.  
+  * See the top 10 states with overall sightings. 
+  * Calculate the length_of_encounter_seconds into minutes or maybe hours.
+  * Calculate some averages or medians for the length_of_encounter.
+  * Make some really cool graphs.
+  
+Jenny Norton
+
+
