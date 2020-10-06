@@ -1,0 +1,26 @@
+---
+title: "Additional"
+author: "John W. Hoggard"
+date: "10/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = F, warning = F}
+source("CleanData.R")
+```
+
+I think in your summary of UFO shapes, you probably wanted something like this?
+
+```{r}
+ufo_data %>%
+  group_by(UFO_shape) %>%
+  summarize(ufo_shape_total = n()) %>%
+  arrange(desc(ufo_shape_total)) %>%
+  head(15)
+```
+
+Or maybe not.  You do later use the number by shape for other analysis.
